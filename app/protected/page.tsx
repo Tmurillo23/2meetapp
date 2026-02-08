@@ -13,7 +13,7 @@ async function UserDetails() {
     redirect("/auth/login");
   }
 
-  return JSON.stringify(data.claims, null, 2);
+  return JSON.stringify(data.claims.sub, null, 2);
 }
 
 export default function ProtectedPage() {
