@@ -34,7 +34,45 @@ export function ProfileForm({
   const [isLoadingInterests, setIsLoadingInterests] = useState(true);
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
   const [availableInterests, setAvailableInterests] = useState<Array<{ id: string; interest: string }>>([]);
+  const [isEditing, setIsEditing] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    const loadProfileData = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        // Cargar datos del perfil existente
+        const { data: profileData } = await supabase
+          .from("profiles")
+          .select("username, description")
+          .eq("id", user.id)
+          .single();
+
+        if (profileData) {
+          setUsername(profileData.username);
+          setDescription(profileData.description);
+          setIsEditing(true); // Si hay datos, es edición
+        }
+
+        // Cargar intereses del usuario
+        const { data: userInterests } = await supabase
+          .from("interest_per_profile")
+          .select("interest_id")
+          .eq("profile_id", user.id);
+
+        if (userInterests) {
+          setSelectedInterests(userInterests.map((item: any) => item.interest_id));
+        }
+      } catch (err) {
+        console.error("Error loading profile data:", err);
+        setIsEditing(false); // Si no hay datos, es creación
+      }
+    };
+
+    loadProfileData();
+  }, [supabase]);
 
   useEffect(() => {
     const loadInterests = async () => {
@@ -94,7 +132,6 @@ export function ProfileForm({
       const {data: {user}} = await supabase.auth.getUser();
       if (!user) throw new Error("User not found");
 
-      // Crear/actualizar perfil
       const { data, error } = await supabase
           .from('profiles')
           .upsert({
@@ -135,7 +172,7 @@ export function ProfileForm({
       }
 
       console.log("Profile created/updated successfully:", data);
-      router.push("/protected");
+      router.push("/main/match");
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : "An error occurred";
       console.error("Error creating profile:", errorMessage);
@@ -167,9 +204,11 @@ export function ProfileForm({
 <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card>
         <CardHeader>
-          <CardTitle>Create your profile</CardTitle>
+          <CardTitle>{isEditing ? "Edit your profile" : "Create your profile"}</CardTitle>
           <CardDescription>
-            This is how your profile will appear to other users.
+            {isEditing
+              ? "Update your profile information."
+              : "This is how your profile will appear to other users."}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -250,7 +289,7 @@ export function ProfileForm({
             </div>
             {error && <p className="text-red-500">{error}</p>}
             <Button type="submit" disabled={isLoading}>
-              {isLoading ? "Creating..." : "Create Profile"}
+              {isLoading ? (isEditing ? "Updating..." : "Creating...") : (isEditing ? "Update Profile" : "Create Profile")}
             </Button>
           </form>
         </CardContent>
