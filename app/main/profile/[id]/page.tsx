@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,8 +12,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Loader, ArrowLeft, MessageCircle } from "lucide-react";
 import Link from "next/link";
-import { Loader } from "lucide-react";
 
 interface ProfileData {
   id: string;
@@ -23,15 +24,15 @@ interface ProfileData {
 interface Interest {
   id: string;
   interest: string;
-  category?: string | null;
+  category?: string;
 }
 
-type InterestRow = {
-  interests: Interest[] | null;
-};
-
-export function Profile() {
+export default function UserProfilePage() {
+  const params = useParams();
+  const router = useRouter();
   const supabase = createClient();
+  const userId = params.id as string;
+
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [interests, setInterests] = useState<Interest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -43,18 +44,15 @@ export function Profile() {
         setIsLoading(true);
         setError(null);
 
-        // Obtener usuario actual
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
-
-        if (userError || !user) {
-          throw new Error("User not found");
+        if (!userId) {
+          throw new Error("User ID not found");
         }
 
         // Obtener datos del perfil
         const { data: profileData, error: profileError } = await supabase
           .from("profiles")
           .select("id, username, description")
-          .eq("id", user.id)
+          .eq("id", userId)
           .single();
 
         if (profileError) {
@@ -76,13 +74,14 @@ export function Profile() {
             )
           `
           )
-          .eq("profile_id", user.id);
+          .eq("profile_id", userId);
 
         if (interestsError) {
           console.error("Error loading interests:", interestsError);
         } else if (userInterests) {
-          const interestsList = (userInterests as InterestRow[])
-            .flatMap((item) => item.interests ?? []);
+          const interestsList = userInterests
+            .map((item: Record<string, unknown>) => item.interests as Interest)
+            .filter((interest): interest is Interest => interest !== undefined && interest !== null);
           setInterests(interestsList);
         }
       } catch (err) {
@@ -95,7 +94,7 @@ export function Profile() {
     };
 
     loadProfile();
-  }, [supabase]);
+  }, [userId, supabase]);
 
   if (isLoading) {
     return (
@@ -108,6 +107,14 @@ export function Profile() {
   if (error) {
     return (
       <div className="flex flex-col gap-6 max-w-2xl mx-auto p-6">
+        <Button
+          variant="ghost"
+          onClick={() => router.back()}
+          className="w-fit gap-2"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back
+        </Button>
         <Card className="border-red-200 bg-red-50">
           <CardHeader>
             <CardTitle className="text-red-700">Error</CardTitle>
@@ -123,18 +130,18 @@ export function Profile() {
   if (!profile) {
     return (
       <div className="flex flex-col gap-6 max-w-2xl mx-auto p-6">
+        <Button
+          variant="ghost"
+          onClick={() => router.back()}
+          className="w-fit gap-2"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back
+        </Button>
         <Card>
           <CardHeader>
-            <CardTitle>No Profile Found</CardTitle>
-            <CardDescription>
-              You don&#39;t have a profile yet. Create one to get started.
-            </CardDescription>
+            <CardTitle>Profile Not Found</CardTitle>
           </CardHeader>
-          <CardContent>
-            <Link href="/main/update-profile">
-              <Button>Create Profile</Button>
-            </Link>
-          </CardContent>
         </Card>
       </div>
     );
@@ -142,15 +149,21 @@ export function Profile() {
 
   return (
     <div className="flex flex-col gap-6 max-w-2xl mx-auto p-6">
+      <Button
+        variant="ghost"
+        onClick={() => router.back()}
+        className="w-fit gap-2"
+      >
+        <ArrowLeft className="w-4 h-4" />
+        Back
+      </Button>
+
       <Card>
         <CardHeader className="flex flex-row items-start justify-between">
           <div>
             <CardTitle className="text-3xl">{profile.username}</CardTitle>
-            <CardDescription>Your Profile Information</CardDescription>
+            <CardDescription>User Profile</CardDescription>
           </div>
-          <Link href="/main/update-profile">
-            <Button>Edit Profile</Button>
-          </Link>
         </CardHeader>
         <CardContent className="flex flex-col gap-6">
           {/* Description */}
@@ -182,18 +195,21 @@ export function Profile() {
             <div className="flex flex-col gap-2">
               <h3 className="font-semibold text-sm">Interests</h3>
               <p className="text-muted-foreground text-sm">
-                No interests added yet.{" "}
-                <Link
-                  href="/main/update-profile"
-                  className="text-blue-600 hover:underline"
-                >
-                  Add some interests
-                </Link>
+                No interests added yet.
               </p>
             </div>
           )}
+
+          {/* Chat Button */}
+          <Link href={`/main/chats/${profile.id}`}>
+            <Button className="w-full gap-2">
+              <MessageCircle className="w-4 h-4" />
+              Open Chat
+            </Button>
+          </Link>
         </CardContent>
       </Card>
     </div>
   );
 }
+

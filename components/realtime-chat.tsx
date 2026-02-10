@@ -16,6 +16,8 @@ import { Input } from '@/components/ui/input'
 interface RealtimeChatProps {
   roomName: string
   username: string
+  currentUserId: string
+  otherUserId: string
   onMessage?: (messages: ChatMessage[]) => void
   messages?: ChatMessage[]
 }
@@ -24,6 +26,8 @@ interface RealtimeChatProps {
  * Realtime chat component
  * @param roomName - The name of the room to join. Each room is a unique chat.
  * @param username - The username of the user
+ * @param currentUserId - The ID of the current user
+ * @param otherUserId - The ID of the other user
  * @param onMessage - The callback function to handle the messages. Useful if you want to store the messages in a database.
  * @param messages - The messages to display in the chat. Useful if you want to display messages from a database.
  * @returns The chat component
@@ -31,6 +35,8 @@ interface RealtimeChatProps {
 export const RealtimeChat = ({
   roomName,
   username,
+  currentUserId,
+  otherUserId,
   onMessage,
   messages: initialMessages = [],
 }: RealtimeChatProps) => {
@@ -43,6 +49,8 @@ export const RealtimeChat = ({
   } = useRealtimeChat({
     roomName,
     username,
+    currentUserId,
+    otherUserId,
   })
   const [newMessage, setNewMessage] = useState('')
 
@@ -54,9 +62,7 @@ export const RealtimeChat = ({
       (message, index, self) => index === self.findIndex((m) => m.id === message.id)
     )
     // Sort by creation date
-    const sortedMessages = uniqueMessages.sort((a, b) => a.createdAt.localeCompare(b.createdAt))
-
-    return sortedMessages
+    return uniqueMessages.sort((a, b) => a.createdAt.localeCompare(b.createdAt))
   }, [initialMessages, realtimeMessages])
 
   useEffect(() => {
@@ -102,7 +108,7 @@ export const RealtimeChat = ({
               >
                 <ChatMessageItem
                   message={message}
-                  isOwnMessage={message.user.name === username}
+                  isOwnMessage={message.user.id === currentUserId}
                   showHeader={showHeader}
                 />
               </div>
