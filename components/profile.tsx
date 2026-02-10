@@ -124,7 +124,7 @@ export function Profile() {
           <CardHeader>
             <CardTitle>No Profile Found</CardTitle>
             <CardDescription>
-              You don't have a profile yet. Create one to get started.
+              You don&#39;t have a profile yet. Create one to get started.
             </CardDescription>
           </CardHeader>
           <CardContent>

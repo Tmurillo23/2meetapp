@@ -1,248 +1,273 @@
 "use client"
-
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Heart, X, Loader } from "lucide-react";
-
-interface UserProfile {
-  id: string;
-  username: string;
-  description: string;
-}
+import { Heart, X } from "lucide-react";
 
 interface Interest {
   id: string;
   interest: string;
-  category: string | null;
+  category?: string;
 }
 
-interface Candidate extends UserProfile {
-  interests: Interest[];
-  commonCount: number;
+interface InterestPerProfile {
+  interests: Interest;
+}
+
+interface MatchProfile {
+  id: string;
+  username: string;
+  description: string;
+  interest_per_profile: InterestPerProfile[];
 }
 
 export function MatchPage() {
   const supabase = createClient();
-  const [candidates, setCandidates] = useState<Candidate[]>([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [userInterests, setUserInterests] = useState<Interest[]>([]);
+  const [matches, setMatches] = useState<MatchProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string>("");
+  const [error, setError] = useState<string | null>(null);
+  const [currentMatchIndex, setCurrentMatchIndex] = useState(0);
 
   useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
-    try {
+    const loadMatches = async () => {
       setIsLoading(true);
-      const { data: { user } } = await supabase.auth.getUser();
+      setError(null);
 
-      if (!user) {
-        setError("No user found");
+      try {
+        // Paso 1: Obtener usuario actual
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          setError("User not found");
+          setIsLoading(false);
+          return;
+        }
+        console.log("Step 1 - Current user ID:", user.id);
+
+        // Paso 2: Obtener intereses del usuario actual
+        const { data: myInterestsData } = await supabase
+          .from('interest_per_profile')
+          .select('interest_id')
+          .eq('profile_id', user.id);
+
+        console.log("Step 2 - My interests:", myInterestsData);
+
+        if (!myInterestsData || myInterestsData.length === 0) {
+          setError("Please set your interests first");
+          setIsLoading(false);
+          return;
+        }
+
+        const myInterestIds = myInterestsData.map((item: { interest_id: string }) => item.interest_id);
+        console.log("Step 3 - My interest IDs:", myInterestIds);
+
+        // Paso 4: Obtener todos los perfiles
+        const { data: allProfiles } = await supabase
+          .from('profiles')
+          .select('id, username, description');
+
+        console.log("Step 4 - All profiles:", allProfiles);
+
+        if (!allProfiles || allProfiles.length === 0) {
+          setMatches([]);
+          setIsLoading(false);
+          return;
+        }
+
+        // Paso 5: Obtener amigos existentes
+        const { data: friendsData } = await supabase
+          .from('friends')
+          .select('friend_user_id')
+          .eq('current_user_id', user.id);
+
+        console.log("Step 5 - Existing friends:", friendsData);
+        const myFriendIds = friendsData?.map((f: { friend_user_id: string }) => f.friend_user_id) || [];
+        console.log("Step 6 - My friend IDs:", myFriendIds);
+
+        const matchProfiles: MatchProfile[] = [];
+
+        for (const profile of allProfiles) {
+          if (profile.id === user.id) {
+            console.log(`Skipping self: ${profile.username}`);
+            continue;
+          }
+
+          // Skip existing friends
+          if (myFriendIds.includes(profile.id)) {
+            console.log(`Skipping friend: ${profile.username}`);
+            continue;
+          }
+
+          // Get interests for this profile
+          const { data: theirInterestsData } = await supabase
+            .from('interest_per_profile')
+            .select('interest_id')
+            .eq('profile_id', profile.id);
+
+          const theirInterestIds = theirInterestsData?.map((item: { interest_id: string }) => item.interest_id) || [];
+          console.log(`Profile ${profile.username} interests:`, theirInterestIds);
+
+          // Count common interests
+          const commonIds = myInterestIds.filter(id => theirInterestIds.includes(id));
+          console.log(`${profile.username} has ${commonIds.length} common interests`);
+
+          // Add if 2+ common interests
+          if (commonIds.length >= 2) {
+            // Get interest details for display
+            const { data: interestDetails } = await supabase
+              .from('interests')
+              .select('id, interest, category')
+              .in('id', commonIds);
+
+            matchProfiles.push({
+              ...profile,
+              interest_per_profile: interestDetails?.map((interest: Interest) => ({
+                interests: interest
+              })) || []
+            });
+
+            console.log(`Added ${profile.username} to matches`);
+          }
+        }
+
+        console.log("Step 8 - Final matches:", matchProfiles);
+        setMatches(matchProfiles);
+
+      } catch (err) {
+        console.error("Error:", err);
+        setError(err instanceof Error ? err.message : "An error occurred");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadMatches();
+  }, [supabase]);
+
+  const handleMatch = async (profileId: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { error } = await supabase
+        .from('friends')
+        .insert({
+          current_user_id: user.id,
+          friend_user_id: profileId
+        });
+
+      if (error) {
+        console.error("Error adding friend:", error);
+        setError("Failed to add friend");
         return;
       }
 
-      // Cargar intereses del usuario actual
-      const userIntrs = await getUserInterests(user.id);
-      setUserInterests(userIntrs);
-
-      // Cargar candidatos
-      const allCandidates = await getAllCandidates(user.id);
-
-      // Filtrar y calcular compatibilidad
-      const compatibleCandidates = allCandidates
-        .map((candidate) => {
-          const commonCount = candidate.interests.filter((interest) =>
-            userIntrs.some((ui) => ui.id === interest.id)
-          ).length;
-          return { ...candidate, commonCount };
-        })
-        .filter((candidate) => candidate.commonCount >= 2)
-        .sort((a, b) => b.commonCount - a.commonCount);
-
-      setCandidates(compatibleCandidates);
+      console.log("Friend added successfully");
+      const newMatches = matches.filter((match) => match.id !== profileId);
+      setMatches(newMatches);
+      if (newMatches.length > 0) {
+        setCurrentMatchIndex(0);
+      }
     } catch (err) {
-      console.error("Error loading data:", err);
-      setError(err instanceof Error ? err.message : "Error loading data");
-    } finally {
-      setIsLoading(false);
+      console.error("Error:", err);
     }
   };
 
-  const getUserInterests = async (userId: string): Promise<Interest[]> => {
-    const { data } = await supabase
-      .from("interest_per_profile")
-      .select("interest_id")
-      .eq("profile_id", userId);
-
-    if (!data || data.length === 0) return [];
-
-    const interestIds = data.map((row) => row.interest_id);
-    const { data: interests } = await supabase
-      .from("interests")
-      .select("*")
-      .in("id", interestIds);
-
-    return interests || [];
-  };
-
-  const getAllCandidates = async (userId: string): Promise<Candidate[]> => {
-    // Obtener amigos existentes
-    const { data: friends } = await supabase
-      .from("friends")
-      .select("friend_user_id")
-      .eq("current_user_id", userId);
-
-    const friendIds = new Set(friends?.map((f) => f.friend_user_id) || []);
-
-    // Obtener todos los perfiles
-    const { data: profiles } = await supabase
-      .from("profiles")
-      .select("*")
-      .neq("id", userId);
-
-    if (!profiles) return [];
-
-    // Para cada perfil, obtener sus intereses
-    const candidatesWithInterests = await Promise.all(
-      profiles
-        .filter((p) => !friendIds.has(p.id))
-        .map(async (profile) => {
-          const interests = await getUserInterests(profile.id);
-          return { ...profile, interests, commonCount: 0 };
-        })
-    );
-
-    return candidatesWithInterests;
-  };
-
-  const handleMatch = async () => {
-    if (currentIndex >= candidates.length) return;
-
-    const candidate = candidates[currentIndex];
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) return;
-
-    // Crear amistad bidireccional
-    await supabase.from("friends").insert({
-      current_user_id: user.id,
-      friend_user_id: candidate.id,
-    });
-
-    await supabase.from("friends").insert({
-      current_user_id: candidate.id,
-      friend_user_id: user.id,
-    });
-
-    nextCandidate();
-  };
-
-  const handleNoMatch = () => {
-    nextCandidate();
-  };
-
-  const nextCandidate = () => {
-    if (currentIndex < candidates.length - 1) {
-      setCurrentIndex(currentIndex + 1);
-    } else {
-      setCandidates([]);
+  const handleReject = (profileId: string) => {
+    const newMatches = matches.filter((match) => match.id !== profileId);
+    setMatches(newMatches);
+    if (newMatches.length > 0) {
+      setCurrentMatchIndex(0);
     }
   };
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <Loader className="w-8 h-8 animate-spin" />
+        <p className="text-lg">Loading matches...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex items-center justify-center min-h-screen p-6">
-        <Card className="max-w-md w-full border-red-200 bg-red-50">
-          <CardHeader>
-            <CardTitle className="text-red-700">Error</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-red-600">{error}</p>
-          </CardContent>
-        </Card>
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-lg text-red-500">{error}</p>
       </div>
     );
   }
 
-  if (candidates.length === 0) {
+  if (matches.length === 0) {
     return (
-      <div className="flex items-center justify-center min-h-screen p-6">
-        <Card className="max-w-md w-full text-center">
-          <CardHeader>
-            <CardTitle>No matches available</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground">
-              No hay personas disponibles con 2 o más intereses en común
-            </p>
-          </CardContent>
-        </Card>
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-lg text-muted-foreground">No matches found</p>
       </div>
     );
   }
 
-  const candidate = candidates[currentIndex];
+  const currentMatch = matches[currentMatchIndex];
 
   return (
-    <div className="flex items-center justify-center min-h-screen p-6">
+    <div className="flex items-center justify-center min-h-screen p-4">
       <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle className="text-2xl text-center">{candidate.username}</CardTitle>
-          <p className="text-sm text-muted-foreground text-center mt-2">
-            {candidate.description}
-          </p>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-6">
-          <div className="flex flex-col gap-2">
-            <h3 className="font-semibold text-sm">
-              Intereses en común: {candidate.commonCount}
-            </h3>
-            <div className="flex flex-wrap gap-2">
-              {candidate.interests.map((interest) => {
-                const isCommon = userInterests.some((ui) => ui.id === interest.id);
-                return (
-                  <Badge key={interest.id} variant={isCommon ? "default" : "secondary"}>
-                    {interest.interest}
-                  </Badge>
-                );
-              })}
+        <CardContent className="p-6">
+          <div className="flex flex-col gap-4">
+            <div className="text-2xl font-bold text-center">
+              {currentMatch.username}
+            </div>
+
+            <div className="text-center text-sm text-muted-foreground">
+              {currentMatch.description}
+            </div>
+
+            <div className="flex flex-wrap gap-2 justify-center">
+              {currentMatch.interest_per_profile && Array.isArray(currentMatch.interest_per_profile) && currentMatch.interest_per_profile.length > 0 ? (
+                currentMatch.interest_per_profile.map((item: InterestPerProfile, index: number) => {
+                  const interestData = item.interests;
+                  if (!interestData) return null;
+                  return (
+                    <div
+                      key={interestData.id || index}
+                      className="px-3 py-1 bg-secondary text-secondary-foreground rounded-full text-sm"
+                    >
+                      {interestData.interest}
+                    </div>
+                  );
+                })
+              ) : (
+                <p className="text-sm text-muted-foreground">No interests</p>
+              )}
+            </div>
+
+            <div className="flex justify-between items-center gap-4 mt-6">
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={() => handleReject(currentMatch.id)}
+                className="flex-1"
+              >
+                <X className="w-6 h-6" />
+              </Button>
+
+              <Button
+                variant="default"
+                size="lg"
+                onClick={() => handleMatch(currentMatch.id)}
+                className="flex-1 bg-red-500 hover:bg-red-600"
+              >
+                <Heart className="w-6 h-6 fill-current" />
+              </Button>
+            </div>
+
+            <div className="text-center text-xs text-muted-foreground mt-4">
+              {currentMatchIndex + 1} of {matches.length}
             </div>
           </div>
-
-          <div className="flex justify-between gap-4">
-            <Button variant="outline" size="lg" onClick={handleNoMatch} className="flex-1">
-              <X className="w-6 h-6" />
-            </Button>
-            <Button
-              variant="default"
-              size="lg"
-              onClick={handleMatch}
-              className="flex-1 bg-red-500 hover:bg-red-600"
-            >
-              <Heart className="w-6 h-6" />
-            </Button>
-          </div>
-
-          <p className="text-xs text-center text-muted-foreground">
-            {currentIndex + 1} / {candidates.length}
-          </p>
         </CardContent>
       </Card>
     </div>
   );
 }
+
 
 

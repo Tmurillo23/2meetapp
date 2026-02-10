@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { LogOut, Home, MessageCircle, Heart, User } from "lucide-react";
+import { LogOut, MessageCircle, Heart, User } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 

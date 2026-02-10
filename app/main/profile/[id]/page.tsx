@@ -80,8 +80,8 @@ export default function UserProfilePage() {
           console.error("Error loading interests:", interestsError);
         } else if (userInterests) {
           const interestsList = userInterests
-            .map((item: any) => item.interests)
-            .filter(Boolean);
+            .map((item: Record<string, unknown>) => item.interests as Interest)
+            .filter((interest): interest is Interest => interest !== undefined && interest !== null);
           setInterests(interestsList);
         }
       } catch (err) {

@@ -63,7 +63,7 @@ export function ProfileForm({
           .eq("profile_id", user.id);
 
         if (userInterests) {
-          setSelectedInterests(userInterests.map((item: any) => item.interest_id));
+          setSelectedInterests(userInterests.map((item: { interest_id: string }) => item.interest_id));
         }
       } catch (err) {
         console.error("Error loading profile data:", err);
@@ -206,7 +206,7 @@ export function ProfileForm({
         <CardHeader>
           <CardTitle>{isEditing ? "Edit your profile" : "Create your profile"}</CardTitle>
           <CardDescription>
-            {isEditing
+olam            {isEditing
               ? "Update your profile information."
               : "This is how your profile will appear to other users."}
           </CardDescription>
