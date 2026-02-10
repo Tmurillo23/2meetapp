@@ -53,7 +53,6 @@ export const RealtimeChat = ({
     otherUserId,
   })
   const [newMessage, setNewMessage] = useState('')
-  const [mergedMessages, setMergedMessages] = useState<ChatMessage[]>([])
 
   // Merge realtime messages with initial messages
   const allMessages = useMemo(() => {
@@ -63,14 +62,8 @@ export const RealtimeChat = ({
       (message, index, self) => index === self.findIndex((m) => m.id === message.id)
     )
     // Sort by creation date
-    const sortedMessages = uniqueMessages.sort((a, b) => a.createdAt.localeCompare(b.createdAt))
-
-    return sortedMessages
+    return uniqueMessages.sort((a, b) => a.createdAt.localeCompare(b.createdAt))
   }, [initialMessages, realtimeMessages])
-
-  useEffect(() => {
-    setMergedMessages(allMessages)
-  }, [allMessages])
 
   useEffect(() => {
     if (onMessage) {
@@ -98,14 +91,14 @@ export const RealtimeChat = ({
     <div className="flex flex-col h-full w-full bg-background text-foreground antialiased">
       {/* Messages */}
       <div ref={containerRef} className="flex-1 overflow-y-auto p-4 space-y-4">
-        {mergedMessages.length === 0 ? (
+        {allMessages.length === 0 ? (
           <div className="text-center text-sm text-muted-foreground">
             No messages yet. Start the conversation!
           </div>
         ) : null}
         <div className="space-y-1">
-          {mergedMessages.map((message, index) => {
-            const prevMessage = index > 0 ? mergedMessages[index - 1] : null
+          {allMessages.map((message, index) => {
+            const prevMessage = index > 0 ? allMessages[index - 1] : null
             const showHeader = !prevMessage || prevMessage.user.name !== message.user.name
 
             return (

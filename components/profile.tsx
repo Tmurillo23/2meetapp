@@ -23,8 +23,12 @@ interface ProfileData {
 interface Interest {
   id: string;
   interest: string;
-  category?: string;
+  category?: string | null;
 }
+
+type InterestRow = {
+  interests: Interest[] | null;
+};
 
 export function Profile() {
   const supabase = createClient();
@@ -77,9 +81,8 @@ export function Profile() {
         if (interestsError) {
           console.error("Error loading interests:", interestsError);
         } else if (userInterests) {
-          const interestsList = userInterests
-            .map((item: any) => item.interests)
-            .filter(Boolean);
+          const interestsList = (userInterests as InterestRow[])
+            .flatMap((item) => item.interests ?? []);
           setInterests(interestsList);
         }
       } catch (err) {

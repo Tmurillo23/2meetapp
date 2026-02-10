@@ -11,13 +11,27 @@ import Link from "next/link";
 interface Friend {
   id: string;
   username: string;
-  description: string;
+  description: string | null;
   interests: Array<{
     id: string;
     interest: string;
-    category?: string;
+    category?: string | null;
   }>;
 }
+
+type ProfileRow = {
+  id: string;
+  username: string;
+  description: string | null;
+};
+
+type InterestRow = {
+  interests: {
+    id: string;
+    interest: string;
+    category?: string | null;
+  } | null;
+};
 
 export function ChatList() {
   const supabase = createClient();
@@ -71,15 +85,15 @@ export function ChatList() {
 
         // Obtener intereses de cada amigo
         const friendsWithInterests = await Promise.all(
-          (friendsProfiles || []).map(async (friend: any) => {
+          (friendsProfiles || []).map(async (friend: ProfileRow) => {
             const { data: interests } = await supabase
               .from("interest_per_profile")
               .select("interests(id, interest, category)")
               .eq("profile_id", friend.id);
 
-            const interestsList = (interests || [])
-              .map((item: any) => item.interests)
-              .filter(Boolean);
+            const interestsList = ((interests as InterestRow[] | null) || [])
+              .map((item) => item.interests)
+              .filter(Boolean) as Friend["interests"];
 
             return {
               ...friend,
