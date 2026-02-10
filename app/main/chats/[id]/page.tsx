@@ -137,6 +137,8 @@ export default function ChatPage() {
         <RealtimeChat
           roomName={roomName}
           username={currentUser.username}
+          currentUserId={currentUser.id}
+          otherUserId={friend.id}
         />
       </div>
     </div>

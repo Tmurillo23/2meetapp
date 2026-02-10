@@ -37,17 +37,23 @@ export function ChatList() {
           throw new Error("User not found");
         }
 
+        console.log("Current user:", user.id);
+
         // Obtener lista de amigos del usuario
         const { data: friendsData, error: friendsError } = await supabase
           .from("friends")
           .select("friend_user_id")
           .eq("current_user_id", user.id);
 
+        console.log("Friends data:", friendsData);
+        console.log("Friends error:", friendsError);
+
         if (friendsError) {
           throw new Error(friendsError.message);
         }
 
         if (!friendsData || friendsData.length === 0) {
+          console.log("No friends found, setting empty array");
           setFriends([]);
           return;
         }

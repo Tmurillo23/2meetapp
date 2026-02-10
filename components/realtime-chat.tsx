@@ -16,6 +16,8 @@ import { Input } from '@/components/ui/input'
 interface RealtimeChatProps {
   roomName: string
   username: string
+  currentUserId: string
+  otherUserId: string
   onMessage?: (messages: ChatMessage[]) => void
   messages?: ChatMessage[]
 }
@@ -24,6 +26,8 @@ interface RealtimeChatProps {
  * Realtime chat component
  * @param roomName - The name of the room to join. Each room is a unique chat.
  * @param username - The username of the user
+ * @param currentUserId - The ID of the current user
+ * @param otherUserId - The ID of the other user
  * @param onMessage - The callback function to handle the messages. Useful if you want to store the messages in a database.
  * @param messages - The messages to display in the chat. Useful if you want to display messages from a database.
  * @returns The chat component
@@ -31,6 +35,8 @@ interface RealtimeChatProps {
 export const RealtimeChat = ({
   roomName,
   username,
+  currentUserId,
+  otherUserId,
   onMessage,
   messages: initialMessages = [],
 }: RealtimeChatProps) => {
@@ -43,8 +49,11 @@ export const RealtimeChat = ({
   } = useRealtimeChat({
     roomName,
     username,
+    currentUserId,
+    otherUserId,
   })
   const [newMessage, setNewMessage] = useState('')
+  const [mergedMessages, setMergedMessages] = useState<ChatMessage[]>([])
 
   // Merge realtime messages with initial messages
   const allMessages = useMemo(() => {
@@ -58,6 +67,10 @@ export const RealtimeChat = ({
 
     return sortedMessages
   }, [initialMessages, realtimeMessages])
+
+  useEffect(() => {
+    setMergedMessages(allMessages)
+  }, [allMessages])
 
   useEffect(() => {
     if (onMessage) {
@@ -85,14 +98,14 @@ export const RealtimeChat = ({
     <div className="flex flex-col h-full w-full bg-background text-foreground antialiased">
       {/* Messages */}
       <div ref={containerRef} className="flex-1 overflow-y-auto p-4 space-y-4">
-        {allMessages.length === 0 ? (
+        {mergedMessages.length === 0 ? (
           <div className="text-center text-sm text-muted-foreground">
             No messages yet. Start the conversation!
           </div>
         ) : null}
         <div className="space-y-1">
-          {allMessages.map((message, index) => {
-            const prevMessage = index > 0 ? allMessages[index - 1] : null
+          {mergedMessages.map((message, index) => {
+            const prevMessage = index > 0 ? mergedMessages[index - 1] : null
             const showHeader = !prevMessage || prevMessage.user.name !== message.user.name
 
             return (
@@ -102,7 +115,7 @@ export const RealtimeChat = ({
               >
                 <ChatMessageItem
                   message={message}
-                  isOwnMessage={message.user.name === username}
+                  isOwnMessage={message.user.id === currentUserId}
                   showHeader={showHeader}
                 />
               </div>
