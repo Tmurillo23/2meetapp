@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,28 +27,25 @@ interface Interest {
   category?: string | null;
 }
 
-type InterestRow = {
-  interests: Interest[] | null;
-};
 
 export function Profile() {
+  const router = useRouter();
   const supabase = createClient();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [interests, setInterests] = useState<Interest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const loadProfile = async () => {
       try {
         setIsLoading(true);
-        setError(null);
 
         // Obtener usuario actual
         const { data: { user }, error: userError } = await supabase.auth.getUser();
 
         if (userError || !user) {
-          throw new Error("User not found");
+          router.push("/auth/login");
+          return;
         }
 
         // Obtener datos del perfil
@@ -55,47 +53,60 @@ export function Profile() {
           .from("profiles")
           .select("id, username, description")
           .eq("id", user.id)
-          .single();
+          .maybeSingle();
 
         if (profileError) {
-          throw new Error(profileError.message || "Failed to load profile");
+          console.error("Profile error:", profileError);
+          router.push("/main/update-profile");
+          return;
+        }
+
+        if (!profileData) {
+          router.push("/main/update-profile");
+          return;
         }
 
         setProfile(profileData);
 
         // Obtener intereses del usuario
-        const { data: userInterests, error: interestsError } = await supabase
+        const { data: userInterestsData, error: interestsError } = await supabase
           .from("interest_per_profile")
-          .select(
-            `
-            id,
-            interests (
-              id,
-              interest,
-              category
-            )
-          `
-          )
+          .select("interest_id")
           .eq("profile_id", user.id);
 
         if (interestsError) {
           console.error("Error loading interests:", interestsError);
-        } else if (userInterests) {
-          const interestsList = (userInterests as InterestRow[])
-            .flatMap((item) => item.interests ?? []);
-          setInterests(interestsList);
+        } else if (userInterestsData && Array.isArray(userInterestsData) && userInterestsData.length > 0) {
+          try {
+            // Obtener los detalles de los intereses
+            const interestIds = userInterestsData
+              .map((item: { interest_id: string }) => item.interest_id)
+              .filter((id): id is string => Boolean(id));
+
+            if (interestIds.length > 0) {
+              const { data: interestDetails, error: detailsError } = await supabase
+                .from("interests")
+                .select("id, interest, category")
+                .in("id", interestIds);
+
+              if (!detailsError && interestDetails && Array.isArray(interestDetails)) {
+                setInterests(interestDetails as Interest[]);
+              }
+            }
+          } catch (err) {
+            console.error("Error processing interests:", err);
+          }
         }
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : "An error occurred";
-        console.error("Error loading profile:", errorMessage);
-        setError(errorMessage);
+        console.error("Error loading profile:", err);
+        router.push("/main/update-profile");
       } finally {
         setIsLoading(false);
       }
     };
 
     loadProfile();
-  }, [supabase]);
+  }, [supabase, router]);
 
   if (isLoading) {
     return (
@@ -105,39 +116,8 @@ export function Profile() {
     );
   }
 
-  if (error) {
-    return (
-      <div className="flex flex-col gap-6 max-w-2xl mx-auto p-6">
-        <Card className="border-red-200 bg-red-50">
-          <CardHeader>
-            <CardTitle className="text-red-700">Error</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-red-600">{error}</p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   if (!profile) {
-    return (
-      <div className="flex flex-col gap-6 max-w-2xl mx-auto p-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>No Profile Found</CardTitle>
-            <CardDescription>
-              You don&#39;t have a profile yet. Create one to get started.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Link href="/main/update-profile">
-              <Button>Create Profile</Button>
-            </Link>
-          </CardContent>
-        </Card>
-      </div>
-    );
+    return null;
   }
 
   return (

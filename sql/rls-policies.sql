@@ -39,3 +39,5 @@ WITH CHECK (participant1_id = auth.uid() OR participant2_id = auth.uid());
 CREATE POLICY "Users can update conversations"
 ON conversations FOR UPDATE
 USING (participant1_id = auth.uid() OR participant2_id = auth.uid());
+
+WITH CHECK (id = auth.uid());

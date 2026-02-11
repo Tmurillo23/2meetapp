@@ -147,29 +147,60 @@ export function MatchPage() {
   const handleMatch = async (profileId: string) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        setError("User not authenticated");
+        return;
+      }
 
-      const { error } = await supabase
+      console.log("Adding friendship between", user.id, "and", profileId);
+
+      // Insert first friendship (current user -> friend)
+      const { error: firstError, data: firstData } = await supabase
         .from('friends')
         .insert({
           current_user_id: user.id,
           friend_user_id: profileId
-        });
+        })
+        .select();
 
-      if (error) {
-        console.error("Error adding friend:", error);
-        setError("Failed to add friend");
+      if (firstError) {
+        console.error("Error adding friend (direction 1):", firstError);
+        console.error("Error details:", JSON.stringify(firstError));
+        setError(`Failed to add friend: ${firstError.message}`);
         return;
       }
 
-      console.log("Friend added successfully");
+      console.log("First friendship added:", firstData);
+
+      // Insert second friendship (friend -> current user)
+      const { error: secondError, data: secondData } = await supabase
+        .from('friends')
+        .insert({
+          current_user_id: profileId,
+          friend_user_id: user.id
+        })
+        .select();
+
+      if (secondError) {
+        console.error("Error adding friend (direction 2):", secondError);
+        console.warn("First friendship was added but second direction failed");
+      } else {
+        console.log("Second friendship added:", secondData);
+      }
+
+      console.log("Friend added successfully (bidirectional)");
       const newMatches = matches.filter((match) => match.id !== profileId);
       setMatches(newMatches);
-      if (newMatches.length > 0) {
-        setCurrentMatchIndex(0);
+      setCurrentMatchIndex(0);
+
+      if (newMatches.length > 0 && currentMatchIndex < newMatches.length) {
+        setCurrentMatchIndex(currentMatchIndex);
+      } else if (newMatches.length > 0) {
+        setCurrentMatchIndex(newMatches.length - 1);
       }
     } catch (err) {
       console.error("Error:", err);
+      setError(err instanceof Error ? err.message : "An error occurred while adding friend");
     }
   };
 
