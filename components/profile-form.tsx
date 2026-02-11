@@ -17,8 +17,8 @@ import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
 import { ChevronDown, X } from "lucide-react";
 
@@ -202,11 +202,11 @@ export function ProfileForm({
 
   return (
 <div className={cn("flex flex-col gap-6", className)} {...props}>
-      <Card>
+      <Card className="bg-purple-300 border border-purple-500 shadow-xl rounded-2xl">
         <CardHeader>
           <CardTitle>{isEditing ? "Edit your profile" : "Create your profile"}</CardTitle>
           <CardDescription>
-olam            {isEditing
+           {isEditing
               ? "Update your profile information."
               : "This is how your profile will appear to other users."}
           </CardDescription>
@@ -215,7 +215,7 @@ olam            {isEditing
           <form onSubmit={handleUpdateProfile} className="flex flex-col gap-4">
             <div className="flex flex-col gap-2">
               <Label htmlFor="username">Username</Label>
-              <Input
+              <Input className="bg-white text-black border border-gray-300 focus:border-black focus:ring-2 focus:ring-black/20"
                 id="username"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
@@ -224,7 +224,7 @@ olam            {isEditing
             </div>
             <div className="flex flex-col gap-2">
               <Label htmlFor="description">Description</Label>
-              <Input
+              <Input className="bg-white text-black border border-gray-300 focus:border-black focus:ring-2 focus:ring-black/20"
                 id="description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
@@ -251,19 +251,14 @@ olam            {isEditing
                     </div>
                   ) : (
                     availableInterests.map((interest) => (
-                      <DropdownMenuItem
+                      <DropdownMenuCheckboxItem
                         key={interest.id}
-                        onClick={() => handleInterestSelect(interest.id)}
-                        className="cursor-pointer"
+                        checked={selectedInterests.includes(interest.id)}
+                        onCheckedChange={() => handleInterestSelect(interest.id)}
+                        onSelect={(e) => e.preventDefault()}
                       >
-                        <input
-                          type="checkbox"
-                          checked={selectedInterests.includes(interest.id)}
-                          onChange={() => {}}
-                          className="mr-2"
-                        />
                         {interest.interest}
-                      </DropdownMenuItem>
+                      </DropdownMenuCheckboxItem>
                     ))
                   )}
                 </DropdownMenuContent>
