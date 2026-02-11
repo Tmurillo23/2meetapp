@@ -212,9 +212,10 @@ export function MatchPage() {
     }
   };
 
+  // 🔥 ESTADOS SIN SCROLL
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="h-[calc(100vh-4rem)] flex items-center justify-center overflow-hidden">
         <p className="text-lg">Loading matches...</p>
       </div>
     );
@@ -222,7 +223,7 @@ export function MatchPage() {
 
   if (error) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="h-[calc(100vh-4rem)] flex items-center justify-center overflow-hidden">
         <p className="text-lg text-red-500">{error}</p>
       </div>
     );
@@ -230,7 +231,7 @@ export function MatchPage() {
 
   if (matches.length === 0) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="h-[calc(100vh-4rem)] flex items-center justify-center overflow-hidden">
         <p className="text-lg text-muted-foreground">No matches found</p>
       </div>
     );
@@ -239,7 +240,7 @@ export function MatchPage() {
   const currentMatch = matches[currentMatchIndex];
 
   return (
-    <div className="flex items-center justify-center min-h-screen p-4">
+    <div className="h-[calc(100vh-4rem)] flex items-center justify-center p-4 overflow-hidden">
       <Card className="w-full max-w-md">
         <CardContent className="p-6">
           <div className="flex flex-col gap-4">
@@ -256,17 +257,21 @@ export function MatchPage() {
                 currentMatch.interest_per_profile.map((item: InterestPerProfile, index: number) => {
                   const interestData = item.interests;
                   if (!interestData) return null;
-                  return (
-                    <div
-                      key={interestData.id || index}
-                      className="px-3 py-1 bg-secondary text-secondary-foreground rounded-full text-sm"
-                    >
-                      {interestData.interest}
-                    </div>
-                  );
-                })
+
+                    return (
+                      <div
+                        key={interestData.id || index}
+                        className="px-3 py-1 bg-secondary text-secondary-foreground rounded-full text-sm"
+                      >
+                        {interestData.interest}
+                      </div>
+                    );
+                  }
+                )
               ) : (
-                <p className="text-sm text-muted-foreground">No interests</p>
+                <p className="text-sm text-muted-foreground">
+                  No interests
+                </p>
               )}
             </div>
 
@@ -275,7 +280,7 @@ export function MatchPage() {
                 variant="outline"
                 size="lg"
                 onClick={() => handleReject(currentMatch.id)}
-                className="flex-1"
+                className="h-12 flex-1 border-2 border-gray-300 hover:bg-red-50 hover:border-red-400 transition-all"
               >
                 <X className="w-6 h-6" />
               </Button>
@@ -284,7 +289,7 @@ export function MatchPage() {
                 variant="default"
                 size="lg"
                 onClick={() => handleMatch(currentMatch.id)}
-                className="flex-1 bg-red-500 hover:bg-red-600"
+                className="h-12 flex-1 bg-purple-500 hover:bg-purple-700 text-white transition-all"
               >
                 <Heart className="w-6 h-6 fill-current" />
               </Button>
@@ -299,6 +304,3 @@ export function MatchPage() {
     </div>
   );
 }
-
-
-

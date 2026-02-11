@@ -158,7 +158,7 @@ export default function UserProfilePage() {
         Back
       </Button>
 
-      <Card>
+      <Card className="bg-white border border-purple-500 shadow-xl rounded-2xl">
         <CardHeader className="flex flex-row items-start justify-between">
           <div>
             <CardTitle className="text-3xl">{profile.username}</CardTitle>

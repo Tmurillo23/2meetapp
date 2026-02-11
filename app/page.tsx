@@ -1,7 +1,6 @@
 import { EnvVarWarning } from "@/components/env-var-warning";
 import { AuthButton } from "@/components/auth-button";
 import { Hero } from "@/components/hero";
-import { ThemeSwitcher } from "@/components/theme-switcher";
 import { hasEnvVars } from "@/lib/utils";
 import { Suspense } from "react";
 import Image from "next/image";
@@ -17,8 +16,8 @@ export default function Home() {
           alt="Imagen izquierda"
           width={300}
           height={400}
-          className='hidden md:block'
-          // className="object-contain opacity-80"
+          // className='hidden md:block'
+          className="object-contain opacity-80"
         />
       </div>
 
@@ -55,7 +54,6 @@ export default function Home() {
           <p>
             Siempre será una buena opción
           </p>
-          <ThemeSwitcher />
         </footer>
       </div>
     </main>
