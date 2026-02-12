@@ -48,10 +48,10 @@ export function ChatList() {
         // Obtener usuario actual
         const { data: { user }, error: userError } = await supabase.auth.getUser();
         if (userError || !user) {
-          throw new Error("User not found");
+          throw new Error("Usuario no encontrado");
         }
 
-        console.log("Current user:", user.id);
+        console.log("Usuario actual:", user.id);
 
         // Obtener lista de amigos del usuario
         const { data: friendsData, error: friendsError } = await supabase
@@ -59,15 +59,15 @@ export function ChatList() {
           .select("friend_user_id")
           .eq("current_user_id", user.id);
 
-        console.log("Friends data:", friendsData);
-        console.log("Friends error:", friendsError);
+        console.log("Data del amigo:", friendsData);
+        console.log("Error del amigo:", friendsError);
 
         if (friendsError) {
           throw new Error(friendsError.message);
         }
 
         if (!friendsData || friendsData.length === 0) {
-          console.log("No friends found, setting empty array");
+          console.log("Sin amigos, dejando el array vacío");
           setFriends([]);
           return;
         }
@@ -143,14 +143,14 @@ export function ChatList() {
       <div className="flex items-center justify-center min-h-screen p-6">
         <Card className="max-w-md w-full text-center">
           <CardHeader>
-            <CardTitle>No chats yet</CardTitle>
+            <CardTitle>Sin chats</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground mb-4">
-              Go to the Match section to find people and start conversations.
+              Ve a la sección de Match para encontrar personas y comenzar conversaciones.
             </p>
             <Link href="/main/match">
-              <Button>Find Matches</Button>
+              <Button>Encontrar Matches</Button>
             </Link>
           </CardContent>
         </Card>
@@ -161,9 +161,9 @@ export function ChatList() {
   return (
     <div className="max-w-4xl mx-auto p-6">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Messages</h1>
+        <h1 className="text-3xl font-bold mb-2">Mensajes</h1>
         <p className="text-muted-foreground">
-          Your matches: {friends.length} person{friends.length !== 1 ? "s" : ""}
+          Tus matches: {friends.length} person{friends.length !== 1 ? "s" : ""}
         </p>
       </div>
 
@@ -181,10 +181,9 @@ export function ChatList() {
               </div>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
-              {/* Interests */}
               {friend.interests.length > 0 && (
                 <div className="flex flex-col gap-2">
-                  <h4 className="font-semibold text-sm">Interests</h4>
+                  <h4 className="font-semibold text-sm">Intereses</h4>
                   <div className="flex flex-wrap gap-2">
                     {friend.interests.map((interest) => (
                       <Badge key={interest.id} variant="secondary">
@@ -195,12 +194,11 @@ export function ChatList() {
                 </div>
               )}
 
-              {/* Action Buttons */}
               <div className="flex gap-2">
                 <Link href={`/main/profile/${friend.id}`} className="flex-1">
                   <Button variant="outline" size="sm" className="w-full gap-2">
                     <Eye className="w-4 h-4" />
-                    View Profile
+                    Ver Perfil
                   </Button>
                 </Link>
                 <Link href={`/main/chats/${friend.id}`} className="flex-1">

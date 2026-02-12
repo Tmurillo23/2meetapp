@@ -21,9 +21,9 @@ interface MatchProfile {
   description: string;
   interest_per_profile: InterestPerProfile[];
 }
+const supabase = createClient();
 
 export function MatchPage() {
-  const supabase = createClient();
   const [matches, setMatches] = useState<MatchProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -38,11 +38,10 @@ export function MatchPage() {
         // Paso 1: Obtener usuario actual
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
-          setError("User not found");
+          setError("Usuario no encontrado");
           setIsLoading(false);
           return;
         }
-        console.log("Step 1 - Current user ID:", user.id);
 
         // Paso 2: Obtener intereses del usuario actual
         const { data: myInterestsData } = await supabase
@@ -50,23 +49,21 @@ export function MatchPage() {
           .select('interest_id')
           .eq('profile_id', user.id);
 
-        console.log("Step 2 - My interests:", myInterestsData);
 
         if (!myInterestsData || myInterestsData.length === 0) {
-          setError("Please set your interests first");
+          setError("Selecciona tus intereses para encontrar matches");
           setIsLoading(false);
           return;
         }
 
         const myInterestIds = myInterestsData.map((item: { interest_id: string }) => item.interest_id);
-        console.log("Step 3 - My interest IDs:", myInterestIds);
+
 
         // Paso 4: Obtener todos los perfiles
         const { data: allProfiles } = await supabase
           .from('profiles')
           .select('id, username, description');
 
-        console.log("Step 4 - All profiles:", allProfiles);
 
         if (!allProfiles || allProfiles.length === 0) {
           setMatches([]);
@@ -80,9 +77,8 @@ export function MatchPage() {
           .select('friend_user_id')
           .eq('current_user_id', user.id);
 
-        console.log("Step 5 - Existing friends:", friendsData);
         const myFriendIds = friendsData?.map((f: { friend_user_id: string }) => f.friend_user_id) || [];
-        console.log("Step 6 - My friend IDs:", myFriendIds);
+
 
         const matchProfiles: MatchProfile[] = [];
 
@@ -92,28 +88,24 @@ export function MatchPage() {
             continue;
           }
 
-          // Skip existing friends
+          // Saltarse a los amigos
           if (myFriendIds.includes(profile.id)) {
-            console.log(`Skipping friend: ${profile.username}`);
             continue;
           }
 
-          // Get interests for this profile
+          // Obtener los intereses para los perfiles de los demás usuarios
           const { data: theirInterestsData } = await supabase
             .from('interest_per_profile')
             .select('interest_id')
             .eq('profile_id', profile.id);
 
           const theirInterestIds = theirInterestsData?.map((item: { interest_id: string }) => item.interest_id) || [];
-          console.log(`Profile ${profile.username} interests:`, theirInterestIds);
 
-          // Count common interests
+          // Contar los intereses comunes
           const commonIds = myInterestIds.filter(id => theirInterestIds.includes(id));
-          console.log(`${profile.username} has ${commonIds.length} common interests`);
 
-          // Add if 2+ common interests
+          // Se añaden a los matches solo si hay al menos 2 intereses comunes
           if (commonIds.length >= 2) {
-            // Get interest details for display
             const { data: interestDetails } = await supabase
               .from('interests')
               .select('id, interest, category')
@@ -126,35 +118,33 @@ export function MatchPage() {
               })) || []
             });
 
-            console.log(`Added ${profile.username} to matches`);
           }
         }
 
-        console.log("Step 8 - Final matches:", matchProfiles);
         setMatches(matchProfiles);
 
       } catch (err) {
         console.error("Error:", err);
-        setError(err instanceof Error ? err.message : "An error occurred");
+        setError(err instanceof Error ? err.message : "Ocurrió un error al cargar los matches");
       } finally {
         setIsLoading(false);
       }
     };
 
     loadMatches();
-  }, [supabase]);
+  }, []);
 
   const handleMatch = async (profileId: string) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        setError("User not authenticated");
+        setError("Usuario no encontrado");
         return;
       }
 
-      console.log("Adding friendship between", user.id, "and", profileId);
 
-      // Insert first friendship (current user -> friend)
+
+      //INSERTAR AMISTADES BIDIRECCIONALES
       const { error: firstError, data: firstData } = await supabase
         .from('friends')
         .insert({
@@ -172,7 +162,6 @@ export function MatchPage() {
 
       console.log("First friendship added:", firstData);
 
-      // Insert second friendship (friend -> current user)
       const { error: secondError, data: secondData } = await supabase
         .from('friends')
         .insert({
@@ -182,13 +171,27 @@ export function MatchPage() {
         .select();
 
       if (secondError) {
-        console.error("Error adding friend (direction 2):", secondError);
-        console.warn("First friendship was added but second direction failed");
+        console.error("Error agregando al segunda amigo", secondError);
+        console.warn("Primera amistad añadida, pero la segunda falló");
+
+        const { error: rollbackError } = await supabase
+          .from('friends')
+          .delete()
+          .eq('current_user_id', user.id)
+          .eq('friend_user_id', profileId);
+
+        if (rollbackError) {
+          console.error("Error al revertir la primera amistad", rollbackError);
+          setError("No se pudo revertir la primera amistad. Intenta de nuevo.");
+        } else {
+          setError("No se pudo completar la amistad. Intenta de nuevo.");
+        }
+
+        return;
       } else {
-        console.log("Second friendship added:", secondData);
+        console.log("Segunda amistad añadida:", secondData);
       }
 
-      console.log("Friend added successfully (bidirectional)");
       const newMatches = matches.filter((match) => match.id !== profileId);
       setMatches(newMatches);
       setCurrentMatchIndex(0);
@@ -200,7 +203,7 @@ export function MatchPage() {
       }
     } catch (err) {
       console.error("Error:", err);
-      setError(err instanceof Error ? err.message : "An error occurred while adding friend");
+      setError(err instanceof Error ? err.message : "Error al agregar amigo");
     }
   };
 
@@ -212,11 +215,11 @@ export function MatchPage() {
     }
   };
 
-  // 🔥 ESTADOS SIN SCROLL
+
   if (isLoading) {
     return (
       <div className="h-[calc(100vh-4rem)] flex items-center justify-center overflow-hidden">
-        <p className="text-lg">Loading matches...</p>
+        <p className="text-lg">Cargando matches...</p>
       </div>
     );
   }
@@ -232,7 +235,7 @@ export function MatchPage() {
   if (matches.length === 0) {
     return (
       <div className="h-[calc(100vh-4rem)] flex items-center justify-center overflow-hidden">
-        <p className="text-lg text-muted-foreground">No matches found</p>
+        <p className="text-lg text-muted-foreground">No se encontraron matches</p>
       </div>
     );
   }
@@ -270,7 +273,7 @@ export function MatchPage() {
                 )
               ) : (
                 <p className="text-sm text-muted-foreground">
-                  No interests
+                  Sin intereses
                 </p>
               )}
             </div>

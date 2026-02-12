@@ -10,12 +10,12 @@ export default function Home() {
         <div className="w-full max-w-6xl flex justify-between items-center px-6 text-sm font-semibold"> 
           <p className="text-xl text-purple-700">2Meet</p> 
           <div className="flex gap-4"> 
-            <Link href="/auth/sign-up"> 
+            <Link href="/auth/login">
               <button className="px-4 py-2 rounded-md bg-purple-600 text-white hover:bg-purple-700 transition"> 
                 Sign In 
               </button> 
             </Link> 
-            <Link href="/auth/login"> 
+            <Link href="/auth/sign-up">
               <button className="px-4 py-2 rounded-md bg-white/90 border border-purple-600 text-purple-600 hover:bg-purple-50 transition"> 
                 Sign Up 
               </button> 

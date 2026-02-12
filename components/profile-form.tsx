@@ -12,7 +12,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
@@ -67,7 +67,7 @@ export function ProfileForm({
         }
       } catch (err) {
         console.error("Error loading profile data:", err);
-        setIsEditing(false); // Si no hay datos, es creación
+        setIsEditing(false);
       }
     };
 

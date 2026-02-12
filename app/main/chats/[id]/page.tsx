@@ -290,7 +290,6 @@ async function ChatContent({ friendId }: ChatContentProps) {
         </div>
       </div>
 
-      {/* Chat body ocupa toda la pantalla */}
       <div className="flex-1 w-full h-full">
         <RealtimeChat
           roomName={roomName}
