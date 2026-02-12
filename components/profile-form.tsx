@@ -66,7 +66,7 @@ export function ProfileForm({
           setSelectedInterests(userInterests.map((item: { interest_id: string }) => item.interest_id));
         }
       } catch (err) {
-        console.error("Error loading profile data:", err);
+        console.error("Error al cargar los datos del perfil:", err);
         setIsEditing(false);
       }
     };
@@ -78,31 +78,31 @@ export function ProfileForm({
     const loadInterests = async () => {
       setIsLoadingInterests(true);
       try {
-        console.log("Starting to load interests...");
+        console.log("Iniciando carga de intereses...");
         const { data, error, status } = await supabase
           .from('interests')
           .select('id, interest');
 
-        console.log("Response status:", status);
+        console.log("Estado de respuesta:", status);
         console.log("Error:", error);
-        console.log("Data:", data);
+        console.log("Datos:", data);
 
         if (error) {
-          console.error("Query error:", error);
-          setError(`Failed to load interests: ${error.message}`);
+          console.error("Error en la consulta:", error);
+          setError(`Error al cargar intereses: ${error.message}`);
           return;
         }
 
         if (!data || data.length === 0) {
-          console.warn("No interests found in database");
+          console.warn("No se encontraron intereses en la base de datos");
         }
 
-        console.log("Interests loaded successfully:", data);
+        console.log("Intereses cargados correctamente:", data);
         setAvailableInterests(data || []);
       } catch (err) {
-        console.error("Error loading interests:", err);
+        console.error("Error al cargar intereses:", err);
         const errorMsg = err instanceof Error ? err.message : String(err);
-        setError(`Error loading interests: ${errorMsg}`);
+        setError(`Error al cargar intereses: ${errorMsg}`);
       } finally {
         setIsLoadingInterests(false);
       }
@@ -117,11 +117,11 @@ export function ProfileForm({
 
     // Validate inputs
     if (!username.trim()) {
-      setError("Username is required");
+      setError("El nombre de usuario es obligatorio");
       return;
     }
     if (!description.trim()) {
-      setError("Description is required");
+      setError("La descripcion es obligatoria");
       return;
     }
 
@@ -130,7 +130,7 @@ export function ProfileForm({
 
     try {
       const {data: {user}} = await supabase.auth.getUser();
-      if (!user) throw new Error("User not found");
+      if (!user) throw new Error("Usuario no encontrado");
 
       const { data, error } = await supabase
           .from('profiles')
@@ -142,11 +142,11 @@ export function ProfileForm({
           .select();
 
       if (error) {
-        console.error("Profile upsert error:", error);
+        console.error("Error al crear/actualizar perfil:", error);
         if (error.message.includes("unique constraint")) {
-          throw new Error("This username is already taken. Please choose another one.");
+          throw new Error("Este nombre de usuario ya esta en uso. Elige otro.");
         }
-        throw new Error(error.message || "Failed to create/update profile");
+        throw new Error(error.message || "No se pudo crear/actualizar el perfil");
       }
 
       if (selectedInterests.length > 0) {
@@ -166,16 +166,16 @@ export function ProfileForm({
           .insert(interestInserts);
 
         if (interestError) {
-          console.error("Interest insert error:", interestError);
-          throw new Error(interestError.message || "Failed to save interests");
+          console.error("Error al guardar intereses:", interestError);
+          throw new Error(interestError.message || "No se pudieron guardar los intereses");
         }
       }
 
-      console.log("Profile created/updated successfully:", data);
+      console.log("Perfil creado/actualizado correctamente:", data);
       router.push("/main/match");
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : "An error occurred";
-      console.error("Error creating profile:", errorMessage);
+      const errorMessage = error instanceof Error ? error.message : "Ocurrio un error";
+      console.error("Error al crear perfil:", errorMessage);
       setError(errorMessage);
     } finally {
       setIsLoading(false);
@@ -204,17 +204,17 @@ export function ProfileForm({
 <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card className="bg-purple-300 border border-purple-500 shadow-xl rounded-2xl">
         <CardHeader>
-          <CardTitle>{isEditing ? "Edit your profile" : "Create your profile"}</CardTitle>
+          <CardTitle>{isEditing ? "Edita tu perfil" : "Crea tu perfil"}</CardTitle>
           <CardDescription>
            {isEditing
-              ? "Update your profile information."
-              : "This is how your profile will appear to other users."}
+              ? "Actualiza la informacion de tu perfil."
+              : "Asi se vera tu perfil para otros usuarios."}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleUpdateProfile} className="flex flex-col gap-4">
             <div className="flex flex-col gap-2">
-              <Label htmlFor="username">Username</Label>
+              <Label htmlFor="username">Nombre de usuario</Label>
               <Input className="bg-white text-black border border-gray-300 focus:border-black focus:ring-2 focus:ring-black/20"
                 id="username"
                 value={username}
@@ -223,7 +223,7 @@ export function ProfileForm({
               />
             </div>
             <div className="flex flex-col gap-2">
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description">Descripcion</Label>
               <Input className="bg-white text-black border border-gray-300 focus:border-black focus:ring-2 focus:ring-black/20"
                 id="description"
                 value={description}
@@ -232,22 +232,22 @@ export function ProfileForm({
               />
             </div>
             <div className="flex flex-col gap-2">
-              <Label>Interests</Label>
+              <Label>Intereses</Label>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" className="justify-between">
-                    {isLoadingInterests ? "Loading interests..." : `Select Interests (${selectedInterests.length})`}
+                    {isLoadingInterests ? "Cargando intereses..." : `Selecciona intereses (${selectedInterests.length})`}
                     <ChevronDown className="w-4 h-4 opacity-50" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56">
                   {isLoadingInterests ? (
                     <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                      Loading interests...
+                      Cargando intereses...
                     </div>
                   ) : availableInterests.length === 0 ? (
                     <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                      No interests available
+                      No hay intereses disponibles
                     </div>
                   ) : (
                     availableInterests.map((interest) => (
@@ -284,7 +284,7 @@ export function ProfileForm({
             </div>
             {error && <p className="text-red-500">{error}</p>}
             <Button type="submit" disabled={isLoading}>
-              {isLoading ? (isEditing ? "Updating..." : "Creating...") : (isEditing ? "Update Profile" : "Create Profile")}
+              {isLoading ? (isEditing ? "Actualizando..." : "Creando...") : (isEditing ? "Actualizar perfil" : "Crear perfil")}
             </Button>
           </form>
         </CardContent>

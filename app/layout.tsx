@@ -9,7 +9,7 @@ const defaultUrl = process.env.VERCEL_URL
 export const metadata: Metadata = {
   metadataBase: new URL(defaultUrl),
   title: "2Meet",
-  description: "The fastest way to build apps with Next.js and Supabase",    
+  description: "Haz amigos rápidamente con 2meet",
 };
 
 const geistSans = Geist({

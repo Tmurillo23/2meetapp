@@ -56,7 +56,7 @@ export function Profile() {
           .maybeSingle();
 
         if (profileError) {
-          console.error("Profile error:", profileError);
+          console.error("Error de perfil:", profileError);
           router.push("/main/update-profile");
           return;
         }
@@ -75,7 +75,7 @@ export function Profile() {
           .eq("profile_id", user.id);
 
         if (interestsError) {
-          console.error("Error loading interests:", interestsError);
+          console.error("Error al cargar intereses:", interestsError);
         } else if (userInterestsData && Array.isArray(userInterestsData) && userInterestsData.length > 0) {
           try {
             // Obtener los detalles de los intereses
@@ -94,11 +94,11 @@ export function Profile() {
               }
             }
           } catch (err) {
-            console.error("Error processing interests:", err);
+            console.error("Error al procesar intereses:", err);
           }
         }
       } catch (err) {
-        console.error("Error loading profile:", err);
+        console.error("Error al cargar perfil:", err);
         router.push("/main/update-profile");
       } finally {
         setIsLoading(false);
@@ -126,23 +126,23 @@ export function Profile() {
         <CardHeader className="flex flex-row items-start justify-between">
           <div>
             <CardTitle className="text-3xl">{profile.username}</CardTitle>
-            <CardDescription>Your Profile Information</CardDescription>
+            <CardDescription>Informacion de tu perfil</CardDescription>
           </div>
           <Link href="/main/update-profile">
-            <Button>Edit Profile</Button>
+            <Button>Editar perfil</Button>
           </Link>
         </CardHeader>
         <CardContent className="flex flex-col gap-6">
           {/* Description */}
           <div className="flex flex-col gap-2">
-            <h3 className="font-semibold text-sm">Description</h3>
+            <h3 className="font-semibold text-sm">Descripcion</h3>
             <p className="text-muted-foreground">{profile.description}</p>
           </div>
 
           {/* Interests */}
           {interests.length > 0 && (
             <div className="flex flex-col gap-2">
-              <h3 className="font-semibold text-sm">Interests</h3>
+              <h3 className="font-semibold text-sm">Intereses</h3>
               <div className="flex flex-wrap gap-2">
                 {interests.map((interest) => (
                   <Badge key={interest.id} variant="secondary">
@@ -160,14 +160,14 @@ export function Profile() {
 
           {interests.length === 0 && (
             <div className="flex flex-col gap-2">
-              <h3 className="font-semibold text-sm">Interests</h3>
+              <h3 className="font-semibold text-sm">Intereses</h3>
               <p className="text-muted-foreground text-sm">
-                No interests added yet.{" "}
+                Aun no tienes intereses agregados.{" "}
                 <Link
                   href="/main/update-profile"
                   className="text-blue-600 hover:underline"
                 >
-                  Add some interests
+                  Agrega algunos intereses
                 </Link>
               </p>
             </div>

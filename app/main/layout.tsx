@@ -28,13 +28,13 @@ export default function MainLayout({
             <Link href="/main/profile">
               <Button variant="ghost" size="sm" className="gap-2">
                 <User className="w-4 h-4" />
-                Profile
+                Perfil
               </Button>
             </Link>
             <Link href="/main/match">
               <Button variant="ghost" size="sm" className="gap-2">
                 <Heart className="w-4 h-4" />
-                Match
+                Coincidencia
               </Button>
             </Link>
             <Link href="/main/chats">
@@ -52,7 +52,7 @@ export default function MainLayout({
             className="gap-2 text-red-600 hover:text-red-700"
           >
             <LogOut className="w-4 h-4" />
-            Logout
+            Cerrar sesión
           </Button>
         </div>
       </nav>
