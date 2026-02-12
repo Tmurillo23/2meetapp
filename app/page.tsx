@@ -1,60 +1,37 @@
-import { EnvVarWarning } from "@/components/env-var-warning";
-import { AuthButton } from "@/components/auth-button";
-import { Hero } from "@/components/hero";
-import { hasEnvVars } from "@/lib/utils";
-import { Suspense } from "react";
 import Image from "next/image";
+import Link from "next/link";
 
 export default function Home() {
   return (
-    <main className="min-h-screen flex flex-col items-center">
-      {/* Imagen izquierda */}
-      <div className="hidden md:block fixed left-0 top-1/2 -translate-y-1/2 z-0">
-      {/* <div className ="flex items-center justify-center p-6 md:w-3/5 md:px-28 md:py-12"> */}
-        <Image
-          src="/images/left.png"
-          alt="Imagen izquierda"
-          width={300}
-          height={400}
-          // className='hidden md:block'
-          className="object-contain opacity-80"
-        />
-      </div>
+    <main className="min-h-screen overflow-y-hidden flex flex-col items-center relative text-foreground">
+      
+      {/* Header */}
+      <nav className="w-full flex justify-center h-16 bg-white/35 shadow-sm z-10 backdrop-blur-md"> 
+        <div className="w-full max-w-6xl flex justify-between items-center px-6 text-sm font-semibold"> 
+          <p className="text-xl text-purple-700">2Meet</p> 
+          <div className="flex gap-4"> 
+            <Link href="/auth/sign-up"> 
+              <button className="px-4 py-2 rounded-md bg-purple-600 text-white hover:bg-purple-700 transition"> 
+                Sign In 
+              </button> 
+            </Link> 
+            <Link href="/auth/login"> 
+              <button className="px-4 py-2 rounded-md bg-white/90 border border-purple-600 text-purple-600 hover:bg-purple-50 transition"> 
+                Sign Up 
+              </button> 
+            </Link> 
+          </div> 
+        </div> 
+      </nav>
 
-      {/* Imagen derecha */}
-      <div className="hidden md:block fixed right-0 top-1/2 -translate-y-1/2 z-0">
-        <Image
-          src="/images/right.png"
-          alt="Imagen derecha"
-          width={300}
-          height={400}
-          className="object-contain opacity-80"
+      {/* Imagen centrada y un poco encima del nav */}
+      <div className="h-full flex justify-center  overflow-y-hidden">
+        <Image 
+          src="/images/fondo1.png" 
+          alt="Fondo"
+          fill 
+          className=" opacity-85 min-h-screen overflow-y-hidden mt-6"
         />
-      </div>
-      <div className="flex-1 w-full flex flex-col gap-20 items-center">
-        <nav className="w-full flex justify-center border-b border-b-foreground/10 h-16">
-          <div className="w-full max-w-5xl flex justify-between items-center p-3 px-5 text-sm">
-            <div className="flex gap-5 items-center font-semibold">
-              <p>2Meet </p>
-            </div>
-            {!hasEnvVars ? (
-              <EnvVarWarning />
-            ) : (
-              <Suspense>
-                <AuthButton />
-              </Suspense>
-            )}
-          </div>
-        </nav>
-        <div className="flex-1 flex flex-col gap-20 max-w-2xl lg:max-w-xl p-5">
-          <Hero /> 
-        </div>
-
-        <footer className="w-full flex items-center justify-center border-t mx-auto text-center text-xs gap-8 py-16">
-          <p>
-            Siempre será una buena opción
-          </p>
-        </footer>
       </div>
     </main>
   );
